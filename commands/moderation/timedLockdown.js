@@ -187,11 +187,11 @@ function parseDuration(durationStr) {
 module.exports = {
   name: "timedlockdown",
   category: "moderation",
-  default_member_permissions: "ManageChannels",
+  default_member_permissions: "ManageRoles",
   data: new SlashCommandBuilder()
     .setName('timedlockdown')
     .setDescription('Lock a channel for a specified duration')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
     .addStringOption((opt) =>
       opt
         .setName('duration')
@@ -207,7 +207,7 @@ module.exports = {
 
   async execute(interaction) {
     // Permission check
-    if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
+    if (!interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
       return interaction.reply({
         content: 'You do not have permission to use this command.',
         flags: 64,

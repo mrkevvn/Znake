@@ -49,12 +49,12 @@ async function applyEveryoneOverwrite(channel, guild, overwrite, retryOnce = tru
 module.exports = {
   name: "lockdown",
   category: "moderation",
-  default_member_permissions: "ManageChannels",
+  default_member_permissions: "ManageRoles",
   data: new SlashCommandBuilder()
     .setName('lockdown')
     .setDescription('Lock all channels in the server (emergency/permanent)')
     .addStringOption(opt => opt.setName('reason').setDescription('Reason for the lockdown'))
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
   cooldown: 30,
 
@@ -73,8 +73,8 @@ module.exports = {
       return interaction.reply({ embeds: [embeds.staffOnly()], flags: MessageFlags.Ephemeral });
     }
 
-    if (!interaction.member.permissions?.has(PermissionFlagsBits.Administrator) && !interaction.member.permissions?.has(PermissionFlagsBits.ManageChannels)) {
-      return interaction.reply({ embeds: [embeds.noPermission('Manage Channels')], flags: MessageFlags.Ephemeral });
+    if (!interaction.member.permissions?.has(PermissionFlagsBits.Administrator) && !interaction.member.permissions?.has(PermissionFlagsBits.ManageRoles)) {
+      return interaction.reply({ embeds: [embeds.noPermission('Manage Roles')], flags: MessageFlags.Ephemeral });
     }
 
     const reason = interaction.options.getString('reason') || 'Emergency lockdown';
