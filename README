@@ -1,0 +1,45 @@
+# Discord Ticket & Utility Bot
+
+A modern Discord bot built with an advanced ticket system, admin configuration tools, and modular event handling. Designed for scalability, clean UX, and server management automation.
+
+---
+
+## 🚀 Features
+
+### 🎫 Advanced Ticket System
+- Category-based ticket creation system
+- Priority levels (Low, Medium, High)
+- Private ticket channels with permission control
+- Claim / Close / Transcript system
+- Duplicate ticket prevention
+- Anti-spam cooldown protection
+
+### 🧭 Support Panel System
+- Professional embedded ticket panel
+- Dropdown category selection
+- Clean SaaS-style UI
+- Fully configurable panel via admin commands
+
+### ⚙️ Admin Configuration
+- `/ticket setticketchannel` command
+- Configure ticket panel channel
+- Configure ticket category system
+- Persistent database storage
+
+### 📄 Transcript System
+- Full message history capture
+- Auto-send to configured channel
+- Fallback channel selection menu
+- Saved preference for future transcripts
+
+### 👋 Server Events
+- Welcome & leave system (guildMemberAdd / guildMemberRemove)
+- Professional embedded UI messages
+- Member tracking and server stats
+
+### 🧠 Smart Logging & Safety
+- Duplicate interaction prevention
+- Safe error handling
+- Guild-specific configuration isolation
+
+---
