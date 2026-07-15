@@ -1,0 +1,2 @@
+This folder contains admin-only moderation commands.
+

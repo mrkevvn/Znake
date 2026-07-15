@@ -1,0 +1,40 @@
+{
+  "name": "discord-management-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@discordjs/builders": "^1.14.1",
+    "@discordjs/rest": "^2.6.1",
+    "chalk": "^4.1.2",
+    "discord-api-types": "^0.37.120",
+    "discord.js": "^14.26.4",
+    "mathjs": "^15.2.0",
+    "moment": "^2.30.1",
+    "node-fetch": "^2.7.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "node deploy-commands.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "management"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "A full-featured Discord management bot built with Discord.js v14",
+  "engines": {
+    "node": ">=16.9.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZeroDiscord/GiveawayBot.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ZeroDiscord/GiveawayBot/issues"
+  },
+  "homepage": "https://github.com/ZeroDiscord/GiveawayBot#readme"
+}
