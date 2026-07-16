@@ -390,7 +390,7 @@ Znake includes **87 slash commands** and **1 context menu command** organized in
 ```
 Znake/
 ├── index.js                 # Entry point — client setup, handlers, intervals
-├── deploy-commands.js       # Global slash command registration script
+├── deployCommands.js        # Global slash command registration script
 ├── package.json
 ├── config.json              # Bot configuration (gitignored)
 │
@@ -429,6 +429,8 @@ Znake/
 │   ├── ticketComponents.js
 │   └── ticketInactivity.js
 │
+├── dev/                     # Test scripts and audit tools
+
 ├── utils/                   # Shared utilities and services
 │   ├── database.js          # JSON flat-file database engine
 │   ├── permissions.js       # Permission and staff checks
