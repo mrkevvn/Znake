@@ -4,3 +4,4 @@ logs/
 config.json
 data/*.json
 *.log
+.mimocode/
