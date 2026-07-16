@@ -1,4 +1,4 @@
-// deploy-commands.js - authoritative slash deployment (manual)
+// deployCommands.js - authoritative slash deployment (manual)
 "use strict";
 
 const logger = require('./utils/logger');
