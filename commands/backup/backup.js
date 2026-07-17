@@ -392,7 +392,7 @@ async function restoreBackup(guild, backup, onProgress) {
 
 // ── Interaction Flows ────────────────────────────────────────────────────────
 
-async function handleLoadFlow(interaction, backup, guild, user) {
+async function handleLoadFlow(interaction, backup, guild, user, { fromButton = false } = {}) {
   const backupId = backup.id;
   const confirmRow = buildConfirmRow(
     `backup_confirm_load:${backupId}`,
@@ -401,25 +401,27 @@ async function handleLoadFlow(interaction, backup, guild, user) {
     '⚠️',
   );
 
-  await interaction.reply({
-    embeds: [new EmbedBuilder()
-      .setColor(config.warningColor)
-      .setTitle('Confirm Backup Restore')
-      .setDescription([
-        `You are about to restore **${backup.name}** (\`${backupId}\`).`,
-        '',
-        '**This will create:**',
-        `- ${(backup.roles || []).length} role(s)`,
-        `- ${(backup.channels || []).length} channel(s)`,
-        '',
-        'Restored items are prefixed with `[R]` to avoid conflicts.',
-        '',
-        '**This action cannot be undone.**',
-      ].join('\n'))
-      .setTimestamp()],
-    components: [confirmRow],
-    flags: MessageFlags.Ephemeral,
-  });
+  const confirmEmbed = new EmbedBuilder()
+    .setColor(config.warningColor)
+    .setTitle('Confirm Backup Restore')
+    .setDescription([
+      `You are about to restore **${backup.name}** (\`${backupId}\`).`,
+      '',
+      '**This will create:**',
+      `- ${(backup.roles || []).length} role(s)`,
+      `- ${(backup.channels || []).length} channel(s)`,
+      '',
+      'Restored items are prefixed with `[R]` to avoid conflicts.',
+      '',
+      '**This action cannot be undone.**',
+    ].join('\n'))
+    .setTimestamp();
+
+  if (fromButton) {
+    await interaction.editReply({ embeds: [confirmEmbed], components: [confirmRow] });
+  } else {
+    await interaction.reply({ embeds: [confirmEmbed], components: [confirmRow], flags: MessageFlags.Ephemeral });
+  }
 
   try {
     const confirmation = await interaction.awaitMessageComponent({
@@ -437,7 +439,7 @@ async function handleLoadFlow(interaction, backup, guild, user) {
           .setTitle('Restore Cancelled')
           .setDescription('Backup restore has been cancelled.')
           .setTimestamp()],
-        components: [],
+        components: [buildActionRow(backupId, true)],
       });
     }
 
@@ -449,6 +451,7 @@ async function handleLoadFlow(interaction, backup, guild, user) {
         .setTitle('Loading Backup')
         .setDescription('Starting restore process...\n\u200b\n\u200b')
         .setTimestamp()],
+      components: [],
     });
 
     const onProgress = (step, current, total, rc, cc, errs) => {
@@ -485,7 +488,7 @@ async function handleLoadFlow(interaction, backup, guild, user) {
           result.errors > 0 ? `Errors: **${result.errors}**` : '',
         ].filter(Boolean).join('\n'))
         .setTimestamp()],
-      components: [],
+      components: [buildActionRow(backupId, true)],
     });
   } catch {
     try {
@@ -495,13 +498,13 @@ async function handleLoadFlow(interaction, backup, guild, user) {
           .setTitle('Timed Out')
           .setDescription('Confirmation timed out. Run `/backup load` again.')
           .setTimestamp()],
-        components: [],
+        components: [buildActionRow(backupId, true)],
       });
     } catch { /* interaction may have expired */ }
   }
 }
 
-async function handleDeleteFlow(interaction, backup, backupId, guild, user, backups) {
+async function handleDeleteFlow(interaction, backup, backupId, guild, user, backups, { fromButton = false } = {}) {
   const confirmRow = buildConfirmRow(
     `backup_confirm_delete:${backupId}`,
     `backup_cancel_delete:${backupId}`,
@@ -509,23 +512,25 @@ async function handleDeleteFlow(interaction, backup, backupId, guild, user, back
     '🗑️',
   );
 
-  await interaction.reply({
-    embeds: [new EmbedBuilder()
-      .setColor(config.errorColor)
-      .setTitle('Confirm Deletion')
-      .setDescription([
-        `Are you sure you want to delete **${backup.name}** (\`${backupId}\`)?`,
-        '',
-        `Channels: ${(backup.channels || []).length}`,
-        `Roles: ${(backup.roles || []).length}`,
-        `Created: ${backup.createdAt ? `<t:${Math.floor(backup.createdAt / 1000)}:R>` : 'Unknown'}`,
-        '',
-        '**This cannot be undone.**',
-      ].join('\n'))
-      .setTimestamp()],
-    components: [confirmRow],
-    flags: MessageFlags.Ephemeral,
-  });
+  const confirmEmbed = new EmbedBuilder()
+    .setColor(config.errorColor)
+    .setTitle('Confirm Deletion')
+    .setDescription([
+      `Are you sure you want to delete **${backup.name}** (\`${backupId}\`)?`,
+      '',
+      `Channels: ${(backup.channels || []).length}`,
+      `Roles: ${(backup.roles || []).length}`,
+      `Created: ${backup.createdAt ? `<t:${Math.floor(backup.createdAt / 1000)}:R>` : 'Unknown'}`,
+      '',
+      '**This cannot be undone.**',
+    ].join('\n'))
+    .setTimestamp();
+
+  if (fromButton) {
+    await interaction.editReply({ embeds: [confirmEmbed], components: [confirmRow] });
+  } else {
+    await interaction.reply({ embeds: [confirmEmbed], components: [confirmRow], flags: MessageFlags.Ephemeral });
+  }
 
   try {
     const confirmation = await interaction.awaitMessageComponent({
@@ -543,7 +548,7 @@ async function handleDeleteFlow(interaction, backup, backupId, guild, user, back
           .setTitle('Deletion Cancelled')
           .setDescription('Backup was not deleted.')
           .setTimestamp()],
-        components: [],
+        components: [buildActionRow(backupId, true)],
       });
     }
 
@@ -700,15 +705,15 @@ async function handleList(interaction, guild, user, backups) {
   });
 }
 
-async function handleInfo(interaction, backup, backupId) {
+async function handleInfo(interaction, backup, backupId, { fromButton = false } = {}) {
   const embed = buildBackupEmbed(backup, interaction.guild, 1, 1);
   const isOwner = backup.createdBy === interaction.user.id;
+  const components = [buildActionRow(backupId, isOwner)];
 
-  return interaction.reply({
-    embeds: [embed],
-    components: [buildActionRow(backupId, isOwner)],
-    flags: MessageFlags.Ephemeral,
-  });
+  if (fromButton) {
+    return interaction.editReply({ embeds: [embed], components });
+  }
+  return interaction.reply({ embeds: [embed], components, flags: MessageFlags.Ephemeral });
 }
 
 // ── Module Export ─────────────────────────────────────────────────────────────
@@ -784,7 +789,21 @@ module.exports = {
 
   async handleButton(interaction, client) {
     const { guild, user } = interaction;
-    const backups = readGuildBackups(guild.id);
+
+    // Defer immediately to prevent interaction timeout (3-second window).
+    // After this, all responses must use editReply() instead of reply().
+    await interaction.deferUpdate();
+
+    let backups;
+    try {
+      backups = readGuildBackups(guild.id);
+    } catch (err) {
+      logger.error(`Backup button read error: ${err.message}`);
+      return interaction.editReply({
+        embeds: [errorEmbed('Error', 'Failed to read backup data.')],
+        components: [],
+      });
+    }
 
     const parts = interaction.customId.split(':');
     const action = parts[0];
@@ -792,34 +811,44 @@ module.exports = {
     const backup = backups[guild.id]?.[backupId];
 
     if (!backup) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [errorEmbed('Backup Not Found', `No backup found with ID \`${backupId}\`.`)],
-        flags: MessageFlags.Ephemeral,
+        components: [],
       });
     }
 
-    if (action === 'backup_info') {
-      return handleInfo(interaction, backup, backupId);
-    }
-
-    if (action === 'backup_load') {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({
-          embeds: [errorEmbed('Permission Denied', 'You need **Administrator** permission to restore backups.')],
-          flags: MessageFlags.Ephemeral,
-        });
+    try {
+      if (action === 'backup_info') {
+        return handleInfo(interaction, backup, backupId, { fromButton: true });
       }
-      return handleLoadFlow(interaction, backup, guild, user);
-    }
 
-    if (action === 'backup_delete') {
-      if (backup.createdBy !== user.id && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({
-          embeds: [errorEmbed('Permission Denied', 'Only the backup creator or an Administrator can delete this backup.')],
-          flags: MessageFlags.Ephemeral,
-        });
+      if (action === 'backup_load') {
+        if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+          return interaction.editReply({
+            embeds: [errorEmbed('Permission Denied', 'You need **Administrator** permission to restore backups.')],
+            components: [buildActionRow(backupId, true)],
+          });
+        }
+        return handleLoadFlow(interaction, backup, guild, user, { fromButton: true });
       }
-      return handleDeleteFlow(interaction, backup, backupId, guild, user, backups);
+
+      if (action === 'backup_delete') {
+        if (backup.createdBy !== user.id && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+          return interaction.editReply({
+            embeds: [errorEmbed('Permission Denied', 'Only the backup creator or an Administrator can delete this backup.')],
+            components: [buildActionRow(backupId, true)],
+          });
+        }
+        return handleDeleteFlow(interaction, backup, backupId, guild, user, backups, { fromButton: true });
+      }
+    } catch (err) {
+      logger.error(`Backup button handler error: ${err.message}`);
+      try {
+        await interaction.editReply({
+          embeds: [errorEmbed('Error', 'An unexpected error occurred.')],
+          components: [buildActionRow(backupId, true)],
+        });
+      } catch { /* interaction may have expired */ }
     }
   },
 };
