@@ -58,6 +58,7 @@ async function loadCommands(client) {
         command._filePath = fullPath;
         command._category = topCategory;
         command._isDevCommand = topCategory === 'dev';
+        command._type = command.data.constructor?.name || 'unknown';
 
         client.commands.set(command.data.name, command);
         loaded++;

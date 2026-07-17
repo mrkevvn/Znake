@@ -1,12 +1,14 @@
 'use strict';
 
+const { isOwner } = require('./isOwner');
+
 // 6 Mandatory Categories
 const CATEGORIES = {
   Moderation: { emoji: '🛡️', label: 'Moderation', desc: 'Server protection & moderating tools' },
   Utility:    { emoji: '🛠️', label: 'Utility', desc: 'General commands & server utilities' },
   Ticket:     { emoji: '🎫', label: 'Ticket', desc: 'Support ticket system management' },
   Premium:    { emoji: '💎', label: 'Premium', desc: 'Exclusive perks & premium commands' },
-  Admin:      { emoji: '⚙️', label: 'Admin', desc: 'Developer & administrative controls' },
+  Admin:      { emoji: '⚙️', label: 'Admin', desc: 'Developer & administrative controls', devOwnerOnly: true },
   Other:      { emoji: '📦', label: 'Other', desc: 'Uncategorized or miscellaneous commands' },
 };
 
@@ -43,9 +45,12 @@ const CATEGORY_MAP = {
  * Single source of truth from client.commands Map.
  * 
  * @param {Client} client Discord client instance containing client.commands Map
+ * @param {string} [userId] Invoking user's ID — dev commands are hidden for non-owners
  * @returns {Object} Object mapping each of the 6 categories to an array of valid, sorted command objects.
  */
-function getGroupedCommands(client) {
+function getGroupedCommands(client, userId) {
+  const owner = isOwner(userId);
+
   // Initialize category groups
   const groups = {};
   for (const catKey of Object.keys(CATEGORIES)) {
@@ -63,6 +68,9 @@ function getGroupedCommands(client) {
   for (const [cmdName, cmd] of client.commands.entries()) {
     if (!cmd) continue;
 
+    // Skip context menu commands — they aren't slash commands and shouldn't appear in /help
+    if (cmd._type === 'ContextMenuCommandBuilder') continue;
+
     // Extract name
     const name = cmd.data?.name || cmd.name;
     if (!name || typeof name !== 'string') continue;
@@ -71,13 +79,6 @@ function getGroupedCommands(client) {
     const lowerName = name.toLowerCase();
     if (processed.has(lowerName)) continue;
     processed.add(lowerName);
-
-    // Extract and fallback description
-    let rawDesc = cmd.data?.description || cmd.description || 'No description available';
-    if (typeof rawDesc !== 'string') rawDesc = 'No description available';
-
-    // Truncate description to max 120 chars
-    const description = rawDesc.length > 120 ? `${rawDesc.substring(0, 117)}...` : rawDesc;
 
     // Determine category
     let groupName = 'Other';
@@ -95,10 +96,20 @@ function getGroupedCommands(client) {
       }
     }
 
+    // Filter: skip dev commands for non-owners
+    if (!owner && cmd.category === 'dev') continue;
+
     // Double check group exists in target list, fallback to Other
     if (!groups[groupName]) {
       groupName = 'Other';
     }
+
+    // Extract and fallback description
+    let rawDesc = cmd.data?.description || cmd.description || 'No description available';
+    if (typeof rawDesc !== 'string') rawDesc = 'No description available';
+
+    // Truncate description to max 120 chars
+    const description = rawDesc.length > 120 ? `${rawDesc.substring(0, 117)}...` : rawDesc;
 
     groups[groupName].push({
       name: lowerName,

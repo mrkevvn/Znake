@@ -13,6 +13,6 @@ module.exports = {
   cooldown: 5,
 
   async execute(interaction, client) {
-    return interaction.reply(buildOverview(client));
+    return interaction.reply(buildOverview(client, interaction.user.id));
   },
 };

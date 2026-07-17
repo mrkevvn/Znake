@@ -6,20 +6,25 @@ const {
 } = require('discord.js');
 const config = require('../config.json');
 const { CATEGORIES, getGroupedCommands } = require('../utils/helpMapper');
+const { isOwner } = require('../utils/isOwner');
 
 /**
  * Builds the selection menu dynamically based on categories.
  * 
  * @param {Object} grouped Object containing commands grouped by category
  * @param {string} [placeholder] Select menu placeholder text
+ * @param {string} [userId] Invoking user's ID — hides dev-only categories for non-owners
  * @returns {ActionRowBuilder} ActionRow containing the select menu
  */
-function buildSelectMenu(grouped, placeholder) {
+function buildSelectMenu(grouped, placeholder, userId) {
   const menu = new StringSelectMenuBuilder()
     .setCustomId('help_cat_sel')
     .setPlaceholder(placeholder || 'Browse a category…');
 
   for (const [key, meta] of Object.entries(CATEGORIES)) {
+    // Hide owner-only categories from non-owners
+    if (meta.devOwnerOnly && !isOwner(userId)) continue;
+
     const cmdCount = grouped[key]?.length || 0;
     // We display the command count in the option description for a premium feel
     menu.addOptions(
@@ -38,10 +43,17 @@ function buildSelectMenu(grouped, placeholder) {
  * Renders the help overview dashboard.
  * 
  * @param {Client} client Discord Client
+ * @param {string} [userId] Invoking user's ID — hides dev-only categories for non-owners
  * @returns {Object} Message payload object with embeds and components
  */
-function buildOverview(client) {
-  const grouped = getGroupedCommands(client);
+function buildOverview(client, userId) {
+  const grouped = getGroupedCommands(client, userId);
+  const owner = isOwner(userId);
+
+  // Filter out owner-only categories for the count and embed display
+  const visibleCategories = Object.entries(CATEGORIES).filter(
+    ([, meta]) => !meta.devOwnerOnly || owner
+  );
   const total = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
 
   const embed = new EmbedBuilder()
@@ -51,13 +63,13 @@ function buildOverview(client) {
       iconURL: client.user.displayAvatarURL() 
     })
     .setDescription(
-      `**${total} commands** loaded across **${Object.keys(CATEGORIES).length} categories**.\n` +
+      `**${total} commands** loaded across **${visibleCategories.length} categories**.\n` +
       `Use the dropdown menu below to explore specific command groups.\n\u200b`
     )
     .setThumbnail(client.user.displayAvatarURL());
 
-  // Perfect 3x2 grid of categories
-  for (const [key, meta] of Object.entries(CATEGORIES)) {
+  // Only show categories visible to this user
+  for (const [key, meta] of visibleCategories) {
     const count = grouped[key]?.length || 0;
     embed.addFields({
       name: `${meta.emoji}  ${meta.label}`,
@@ -72,7 +84,7 @@ function buildOverview(client) {
 
   return { 
     embeds: [embed], 
-    components: [buildSelectMenu(grouped, 'Browse a category…')] 
+    components: [buildSelectMenu(grouped, 'Browse a category…', userId)] 
   };
 }
 
@@ -81,13 +93,17 @@ function buildOverview(client) {
  * 
  * @param {Client} client Discord Client
  * @param {string} catKey Category key to build
+ * @param {string} [userId] Invoking user's ID — hides dev-only categories for non-owners
  * @returns {Object|null} Message payload object, or null if category is invalid
  */
-function buildCategory(client, catKey) {
+function buildCategory(client, catKey, userId) {
   const meta = CATEGORIES[catKey];
   if (!meta) return null;
 
-  const grouped = getGroupedCommands(client);
+  // Block non-owners from accessing owner-only categories
+  if (meta.devOwnerOnly && !isOwner(userId)) return null;
+
+  const grouped = getGroupedCommands(client, userId);
   const cmds = grouped[catKey] || [];
 
   const lines = cmds.map(c => `• \`/${c.name}\` ─ ${c.description}`);
@@ -109,7 +125,7 @@ function buildCategory(client, catKey) {
 
   return { 
     embeds: [embed], 
-    components: [backRow, buildSelectMenu(grouped, 'Switch category…')] 
+    components: [backRow, buildSelectMenu(grouped, 'Switch category…', userId)] 
   };
 }
 
@@ -118,7 +134,7 @@ function buildCategory(client, catKey) {
  */
 async function handleHelpSelect(interaction, client) {
   const catKey = interaction.values[0];
-  const payload = buildCategory(client, catKey);
+  const payload = buildCategory(client, catKey, interaction.user.id);
   if (!payload) {
     return interaction.reply({ content: 'Unknown category.', flags: MessageFlags.Ephemeral });
   }
@@ -129,7 +145,7 @@ async function handleHelpSelect(interaction, client) {
  * Handles back button click to return to the overview page.
  */
 async function handleHelpBack(interaction, client) {
-  return interaction.update(buildOverview(client));
+  return interaction.update(buildOverview(client, interaction.user.id));
 }
 
 module.exports = { 
